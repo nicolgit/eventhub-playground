@@ -4,20 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 public class Worker : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-    private TelemetryClient _telemetryClient;
-
-    public Worker(ILogger<Worker> logger, TelemetryClient tc)
+    public Worker()
     {
-        _logger = logger;
-        _telemetryClient = tc;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,31 +19,41 @@ public class Worker : BackgroundService
             // Create a batch of events 
             using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
 
+            Console.WriteLine($"Worker running at: {DateTimeOffset.Now}");
+
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                Console.WriteLine("Calling EventHUB BEGIN");
+                
+                // with partition key (order guaranteed)
+                var ed = new EventData(Encoding.UTF8.GetBytes   ($"1st Event Timestamp ORDERED { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}"));
+                ed.Properties.Add("PartitionKey", "worker01");
+                eventBatch.TryAdd (ed);
 
-                using (_telemetryClient.StartOperation<RequestTelemetry>("operation"))
-                {
-                    _logger.LogWarning("A sample warning message.By default, logs with severity Warning or higher is captured by Application Insights");
-                    _logger.LogInformation("Calling EventHUB");
-                    
-                    eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes($"First event { DateTime.Now.ToLongTimeString() }")));
-                    eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes("Second event")));
-                    eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes("Third event")));
+                ed = new EventData(Encoding.UTF8.GetBytes       ($"2nd Event Timestamp ORDERED { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}"));
+                ed.Properties.Add("PartitionKey", "worker01");
+                eventBatch.TryAdd (ed);
 
-                    // Use the producer client to send the batch of events to the event hub
-                    await producerClient.SendAsync(eventBatch);
+                ed = new EventData(Encoding.UTF8.GetBytes       ($"3td Event Timestamp ORDERED { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}"));
+                ed.Properties.Add("PartitionKey", "worker01");
+                eventBatch.TryAdd (ed);
 
-                    _logger.LogInformation("Calling EventHUB completed");
-                    _telemetryClient.TrackEvent("event completed");
-                }
+                // without partition key (order not guaranteed)
+                /*
+                eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes($"1st Event Timestamp { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}")));
+                await Task.Delay(100);
+                eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes($"2nd event Timestamp { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}")));
+                await Task.Delay(100);
+                eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes($"3rd event Timestamp { DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond}")));
+                await Task.Delay(100);
+                */
 
-                await Task.Delay(1000, stoppingToken);
+                // Use the producer client to send the batch of events to the event hub
+                await producerClient.SendAsync (eventBatch);
+
+                Console.WriteLine("Calling EventHUB completed");
+                await Task.Delay(4000, stoppingToken);
             }
-
-            // Add events to the batch. An event is a represented by a collection of bytes and metadata. 
-            
         }
     }
 }

@@ -5,22 +5,15 @@ using System.Threading.Tasks;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.EventHubs.Consumer;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Azure.Storage.Blobs;
 using Azure.Messaging.EventHubs.Processor;
 
 public class Worker : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-    private TelemetryClient _telemetryClient;
-
-    public Worker(ILogger<Worker> logger, TelemetryClient tc)
+    
+    public Worker()
     {
-        _logger = logger;
-        _telemetryClient = tc;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,7 +43,8 @@ public class Worker : BackgroundService
     async Task ProcessEventHandler(ProcessEventArgs eventArgs)
     {
         // Write the body of the event to the console window
-        _logger.LogInformation("\tReceived event: {0}", Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray()));
+        //_logger.LogInformation("\tReceived event: {0}", Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray()));
+        Console.WriteLine($"{ DateTime.Now.ToLongTimeString() } - {DateTime.Now.Millisecond + 1000} - Received event: { Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray()) }");
 
         // Update checkpoint in the blob storage so that the app receives only new events the next time it's run
         await eventArgs.UpdateCheckpointAsync(eventArgs.CancellationToken);
@@ -59,8 +53,8 @@ public class Worker : BackgroundService
     Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
     {
         // Write details about the error to the console window
-        _logger.LogError($"\tPartition '{ eventArgs.PartitionId}': an unhandled exception was encountered. This was not expected to happen.");
-        _logger.LogError(eventArgs.Exception.Message);
+        Console.WriteLine($"\tPartition '{ eventArgs.PartitionId}': an unhandled exception was encountered. This was not expected to happen.");
+        Console.WriteLine(eventArgs.Exception.Message);
         return Task.CompletedTask;
     }    
 }

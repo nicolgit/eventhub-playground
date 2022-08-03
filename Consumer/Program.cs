@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.Channel;
 
 namespace client
 {
@@ -36,18 +34,8 @@ namespace client
                 .ConfigureServices((hostContext, services) =>
                     {
                         services.AddHostedService<Worker>();
-                        services.AddApplicationInsightsTelemetryWorkerService();
-                        services.AddSingleton<ITelemetryInitializer, CloudRoleNameTelemetryInitializer>();
-
                     });
     }
 
-    public class CloudRoleNameTelemetryInitializer : ITelemetryInitializer
-    {
-        public void Initialize(ITelemetry telemetry)
-        {
-        // set custom role name here
-        telemetry.Context.Cloud.RoleName = "NicolConsumer";
-        }
-    }
+
 }
