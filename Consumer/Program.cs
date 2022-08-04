@@ -33,7 +33,8 @@ namespace client
                     })
                 .ConfigureServices((hostContext, services) =>
                     {
-                        services.AddHostedService<Worker>();
+                        //services.AddHostedService<Read1by1_Worker>();
+                        services.AddHostedService<ReadBatch_Worker>();
                     });
     }
 
