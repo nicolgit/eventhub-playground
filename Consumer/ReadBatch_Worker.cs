@@ -24,7 +24,7 @@ public class ReadBatch_Worker : BackgroundService
         string consumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
 
         using CancellationTokenSource cancellationSource = new CancellationTokenSource();
-        cancellationSource.CancelAfter(TimeSpan.FromSeconds(30));
+        cancellationSource.CancelAfter(TimeSpan.FromSeconds(999));
 
         string firstPartition;
 
@@ -63,8 +63,9 @@ public class ReadBatch_Worker : BackgroundService
                 Console.WriteLine($"END Batch Read");
             }
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException tce)
         {
+            Console.WriteLine($"Cancellation Requested: {tce.Message}");
             // This is expected if the cancellation token is
             // signaled.
         }
